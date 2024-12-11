@@ -1,25 +1,61 @@
-<?xml version = "1.0" encoding = "utf-8" ?> 
-<component name = "VideoExample" extends = "Scene" >
-  <script type = "text/brightscript" >
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VideoExample" extends="Scene">
+  <script type="text/brightscript">
     <![CDATA[
 
     sub init()
+      ' Create video content
       videocontent = createObject("RoSGNode", "ContentNode")
       videocontent.live = true
       videocontent.PlayStart = 999999999
       videocontent.streamformat = "hls"
-      videocontent.url = "http://play.droptv.com.br"
+      videocontent.url = "http://play.droptv.com.br"
+
+      ' Set up the video node
       video = m.top.findNode("exampleVideo")
       video.content = videocontent
 
+      ' Start playing the video
       video.setFocus(true)
       video.control = "play"
+
+      ' Initialize the last logged position
+      m.lastLoggedPosition = -1
+
+      ' Create a timer to log the playing position every 5 seconds
+      m.positionLogger = m.top.findNode("positionLogger")
+      m.positionLogger.control = "start"
+      m.positionLogger.ObserveField("fire", "logPlayingPosition")
+    end sub
+
+    ' Callback to log the current playing position and check if it advanced
+    sub logPlayingPosition()
+      video = m.top.findNode("exampleVideo")
+      currentPosition = video.position
+      if currentPosition = m.lastLoggedPosition then
+        print "stuck"
+
+        ' Destroy and recreate the videocontent node
+        videocontent = invalid
+        videocontent = createObject("RoSGNode", "ContentNode")
+        videocontent.live = true
+        videocontent.PlayStart = 999999999
+        videocontent.streamformat = "hls"
+        videocontent.url = "http://play.droptv.com.br"
+
+        video.content = videocontent
+        video.control = "play"
+        print "Recreated videocontent node and resumed playback."
+      else
+       ' print "Current Playing Position: " + str(currentPosition) + " ms"
+        m.lastLoggedPosition = currentPosition
+      end if
     end sub
 
     ]]>
-
   </script>
-  <children >
-    <Video id = "exampleVideo"/>
+  <children>
+    <Video id="exampleVideo"/>
+    <Timer id="positionLogger" repeat="true" duration="15"/>
   </children>
-</component>
+</component>
