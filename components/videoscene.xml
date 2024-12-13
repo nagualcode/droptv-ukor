@@ -9,7 +9,7 @@
       videocontent.live = true
       videocontent.PlayStart = 999999999
       videocontent.streamformat = "hls"
-      videocontent.url = "http://play.droptv.com.br"
+      videocontent.url = "https://play.droptv.com.br"
 
       ' Set up the video node
       video = m.top.findNode("exampleVideo")
@@ -19,43 +19,57 @@
       video.setFocus(true)
       video.control = "play"
 
-      ' Initialize the last logged position
-      m.lastLoggedPosition = -1
+      ' Add onStateChanged observer
+      video.ObserveField("state", "onStateChanged")
 
-      ' Create a timer to log the playing position every 5 seconds
-      m.positionLogger = m.top.findNode("positionLogger")
-      m.positionLogger.control = "start"
-      m.positionLogger.ObserveField("fire", "logPlayingPosition")
     end sub
 
-    ' Callback to log the current playing position and check if it advanced
-    sub logPlayingPosition()
-      video = m.top.findNode("exampleVideo")
-      currentPosition = video.position
-      if currentPosition = m.lastLoggedPosition then
-        print "stuck"
+    ' Callback to handle state changes
+    sub onStateChanged(event as object)
+      state = event.getData()
 
-        ' Destroy and recreate the videocontent node
-        videocontent = invalid
-        videocontent = createObject("RoSGNode", "ContentNode")
-        videocontent.live = true
-        videocontent.PlayStart = 999999999
-        videocontent.streamformat = "hls"
-        videocontent.url = "http://play.droptv.com.br"
+      ? "onStateChanged(), state = " state
 
-        video.content = videocontent
-        video.control = "play"
-        print "Recreated videocontent node and resumed playback."
-      else
-       ' print "Current Playing Position: " + str(currentPosition) + " ms"
-        m.lastLoggedPosition = currentPosition
+      if (state = "finished")
+        restartPlayer()
       end if
+    end sub
+
+    ' Method to restart the video player by destroying and recreating the node
+    sub restartPlayer()
+      video = m.top.findNode("exampleVideo")
+      if video <> invalid then
+        m.top.removeChild(video)
+        print "Removed existing video node."
+      end if
+
+' Recreate the video node
+video = createObject("RoSGNode", "Video")
+video.id = "exampleVideo"
+m.top.appendChild(video)
+
+
+      ' Reassign content and start playback
+      videocontent = createObject("RoSGNode", "ContentNode")
+      videocontent.live = true
+      videocontent.PlayStart = 999999999
+      videocontent.streamformat = "hls"
+      videocontent.url = "https://play.droptv.com.br"
+
+      video.content = videocontent
+      video.setFocus(true)
+      video.control = "play"
+
+      ' Reattach observers
+      video.ObserveField("state", "onStateChanged")
+      print "Reattached onStateChanged observer."
+
+      print "Recreated video node and resumed playback."
     end sub
 
     ]]>
   </script>
   <children>
     <Video id="exampleVideo"/>
-    <Timer id="positionLogger" repeat="true" duration="15"/>
   </children>
 </component>
